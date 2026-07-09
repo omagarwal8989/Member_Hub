@@ -1,0 +1,87 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  ADMIN
+  MEMBER
+}
+
+enum Status {
+  ACTIVE
+  INACTIVE
+  EXPIRING
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String   // We will store the hashed password here
+  role      Role     @default(MEMBER)
+  member    Member?  
+  createdAt DateTime @default(now())
+}
+
+model MembershipTier {
+  id           String   @id @default(uuid())
+  name         String   @unique 
+  price        Float
+  durationDays Int
+  members      Member[]
+}
+
+model Member {
+  id               String         @id @default(uuid())
+  userId           String?        @unique
+  user             User?          @relation(fields: [userId], references: [id])
+  firstName        String
+  lastName         String
+  email            String         @unique
+  status           Status         @default(ACTIVE)
+  tierId           String
+  tier             MembershipTier @relation(fields: [tierId], references: [id])
+  startDate        DateTime       @default(now())
+  endDate          DateTime
+  documentUrl    String?        // <--- ADD IT RIGHT HERE!
+  documents        Document[]
+  certificates     Certificate[]
+  createdAt        DateTime       @default(now())
+}
+
+model Document {
+  id         String   @id @default(uuid())
+  name       String   
+  url        String   
+  memberId   String
+  member     Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  uploadedAt DateTime @default(now())
+}
+
+model Certificate {
+  id        String   @id @default(uuid())
+  url       String   
+  issuedAt  DateTime @default(now())
+  memberId  String
+  member    Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+}
+
+model PasswordResetOTP {
+  id        String   @id @default(uuid())
+  email     String
+  otp       String
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model ActivityLog {
+  id        String   @id @default(uuid())
+  type      String   // "MEMBER_ADDED" | "MEMBER_DELETED" | "CERTIFICATE_ISSUED"
+  message   String   // human-readable description shown in the notification bell
+  createdAt DateTime @default(now())
+}
