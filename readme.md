@@ -1,115 +1,90 @@
 # MemberHub
 
-A full-stack web application for managing organization memberships, automating renewal reminders, generating certificates, and storing member documents.
+A membership management platform for organizations that need to track members, automate renewal reminders, issue certificates, and store supporting documents - built as a full-stack project with a real production-style backend (queued background jobs, role-based permissions, containerized deployment).
 
-## Features
+## What it does
 
-- **Membership Management** — add, edit, delete members; assign membership tiers; search and filter by status
-- **Role-Based Access Control** — Admin and Member portals, permissions enforced via [CASL](https://casl.js.org/)
-- **Renewal Reminders** — automated daily scan for expiring memberships, emails queued via BullMQ + Redis and sent through Nodemailer
-- **Certificate Generation** — customizable PDF certificates (style, achievement text, signatory) rendered with Puppeteer from an HTML/CSS template
-- **Document Storage** — upload and manage member documents (waivers, registration forms) via Cloudinary
-- **Reports & Analytics** — membership status breakdown, tier distribution, signup/certificate trends over time
-- **Forgot Password** — OTP-based password reset via email, works for both Admin and Member accounts
-- **Activity Log & Notifications** — tracks member additions/removals and certificate issuance
-- **Automated Tests** — Jest + Supertest covering RBAC, auth, and core member operations
-- **Containerized** — Dockerfiles + docker-compose for both frontend and backend
+MemberHub gives an organization two views into the same data: an **admin portal** for staff managing the membership base, and a **member portal** where individuals can check their own status and pull their own records.
 
-## Tech Stack
+- Track members across configurable tiers, with automatic status transitions (`Active → Expiring → Inactive`) driven by a scheduled job
+- Send renewal reminder emails automatically as memberships approach expiry, processed through a background queue rather than blocking the request cycle
+- Generate branded PDF certificates on demand, with a choice of styles and an optional signatory line
+- Store member documents (waivers, registration forms) in cloud storage, attached to the right member record
+- Give admins a reporting view - status breakdown, tier distribution, signup and certificate trends over time
+- Let members self-serve: view their own profile, update their contact email, download their own certificate, reset a forgotten password via emailed OTP
 
-| Layer | Technology |
-|---|---|
-| Frontend | React, Tailwind CSS, Axios, React Router |
-| Backend | Node.js, Express.js |
-| Database | PostgreSQL (via [Neon](https://neon.tech)), Prisma ORM |
-| Auth | JWT, bcrypt, CASL (permissions) |
-| Email | Nodemailer, BullMQ + Redis (via [Upstash](https://upstash.com)) for queued delivery |
-| PDF Generation | Puppeteer |
-| File Storage | Cloudinary |
-| Testing | Jest, Supertest, jest-mock-extended |
-| Containerization | Docker, Docker Compose |
+## Architecture
 
-## Project Structure
+| Layer | Choice | Why |
+|---|---|---|
+| Frontend | React + Tailwind CSS | Component-driven UI, fast iteration on the admin/member views |
+| Backend | Node.js + Express | Simple, well-understood REST layer |
+| Database | PostgreSQL + Prisma | Relational fit for members/tiers/documents/certificates; Prisma keeps schema and queries type-safe |
+| Auth | JWT + CASL | Stateless auth; permissions defined declaratively rather than scattered `if` checks across routes |
+| Background jobs | node-cron + BullMQ + Redis | Cron handles scheduling ("check for expiring memberships daily"); BullMQ decouples the actual email send so a slow SMTP provider can't stall the request that triggered it, and failed sends retry automatically |
+| PDF generation | Puppeteer | Certificates are an HTML/CSS template rendered to PDF, rather than hand-coded coordinate drawing — easier to restyle |
+| File storage | Cloudinary | Offloads document/file storage from the app server |
+| Testing | Jest + Supertest | RBAC and auth are the highest-risk surface area, so they're the most thoroughly covered |
+| Containerization | Docker + docker-compose | Backend and frontend each build and run as isolated containers |
+
+## Project layout
 
 ```
-Membur_hub/
+memberhub/
 ├── backend/
 │   ├── prisma/schema.prisma
 │   ├── src/
-│   │   ├── routes/        # auth.js, members.js
-│   │   ├── middleware/     # authMiddleware, attachAbility, requireAbility, uploadMiddleware
-│   │   ├── casl/           # defineAbility.js — permission rules
-│   │   ├── jobs/           # reminderCron.js
-│   │   ├── queues/         # BullMQ queue + worker for reminder emails
-│   │   ├── utils/          # emailService, certificateTemplate, pdfRenderer
+│   │   ├── routes/          auth.js, members.js
+│   │   ├── middleware/      authMiddleware, attachAbility, requireAbility, uploadMiddleware
+│   │   ├── casl/            defineAbility.js — where all permission rules live
+│   │   ├── jobs/            reminderCron.js
+│   │   ├── queues/          BullMQ queue + worker for reminder emails
+│   │   ├── utils/           emailService, certificateTemplate, pdfRenderer
 │   │   └── server.js
-│   ├── tests/               # Jest + Supertest suite
+│   ├── tests/
 │   └── Dockerfile
 ├── frontend/
 │   ├── src/
-│   │   ├── pages/           # LoginPage, RegisterPage, MemberDetail, Reports, Settings, MemberProfile...
-│   │   ├── components/      # Layout, MemberForm, CertificateModal, ConfirmDialog...
-│   │   └── Dashboard.jsx
+│   │   ├── pages/           LoginPage, RegisterPage, MemberDetail, Reports, Settings, MemberProfile
+│   │   └── components/      Layout, MemberForm, CertificateModal, ConfirmDialog
 │   └── Dockerfile
 └── docker-compose.yml
 ```
 
-## Getting Started (Local Development)
+## Running it locally
 
-### Prerequisites
-- Node.js 20+
-- A PostgreSQL database (e.g. a free [Neon](https://neon.tech) instance)
-- A Redis instance (e.g. a free [Upstash](https://upstash.com) instance)
-- A Cloudinary account (free tier) for document/certificate file storage
-- A Gmail account with an [App Password](https://myaccount.google.com/apppasswords) for sending emails
+You'll need Node 20+, and accounts for: a Postgres database (a free [Neon](https://neon.tech) instance works well), a Redis instance (free tier on [Upstash](https://upstash.com)), Cloudinary (for file storage), and a Gmail account with an [App Password](https://myaccount.google.com/apppasswords) for sending mail.
 
-### Backend Setup
-
+**Backend**
 ```bash
 cd backend
 npm install
-```
-
-Create `backend/.env` (see `.env.example` for the full list of required variables), then:
-
-```bash
+cp .env.example .env   # fill in your own values
 npx prisma db push
 npm run dev
 ```
+Runs on `http://localhost:5000`.
 
-Backend runs on `http://localhost:5000`.
-
-### Frontend Setup
-
+**Frontend**
 ```bash
 cd frontend
 npm install
 npm run dev
 ```
+Runs on `http://localhost:5173`.
 
-Frontend runs on `http://localhost:5173` (Vite default).
-
-### Running Tests
-
+**Tests**
 ```bash
 cd backend
 npm test
 ```
 
-### Running with Docker
-
-From the project root, with Docker Desktop running:
-
+**Docker** (from the project root, with Docker Desktop running)
 ```bash
 docker compose up --build
 ```
-
-- Frontend: `http://localhost:3000`
-- Backend: `http://localhost:5000`
+Frontend on `http://localhost:3000`, backend on `http://localhost:5000`.
 
 ## Roles
 
-- **Admin** — full access: manage members, tiers, certificates, reports, settings
-- **Member** — self-service: view own profile, update own email, download own certificate, upload own documents
-
-The first admin account must be created manually (register normally, then promote the account's `role` to `ADMIN` via Prisma Studio: `npx prisma studio`).
+The first admin account isn't created through the sign-up form — that's intentional, so nobody can self-promote to admin. Register normally, then flip that one account's `role` to `ADMIN` via `npx prisma studio`. Every account after that follows the normal member self-registration flow, and gets linked to its member record automatically by matching email.
