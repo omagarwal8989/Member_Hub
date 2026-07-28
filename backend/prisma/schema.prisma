@@ -1,6 +1,7 @@
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 generator client {
@@ -18,22 +19,6 @@ enum Status {
   EXPIRING
 }
 
-model User {
-  id        String   @id @default(uuid())
-  email     String   @unique
-  password  String   // We will store the hashed password here
-  role      Role     @default(MEMBER)
-  member    Member?  
-  createdAt DateTime @default(now())
-}
-
-model MembershipTier {
-  id           String   @id @default(uuid())
-  name         String   @unique 
-  price        Float
-  durationDays Int
-  members      Member[]
-}
 
 model Member {
   id               String         @id @default(uuid())
@@ -47,11 +32,27 @@ model Member {
   tier             MembershipTier @relation(fields: [tierId], references: [id])
   startDate        DateTime       @default(now())
   endDate          DateTime
-  documentUrl    String?        // <--- ADD IT RIGHT HERE!
+  documentUrl      String?
   documents        Document[]
   certificates     Certificate[]
+  payments         Payment[]      // <-- add this line
   createdAt        DateTime       @default(now())
 }
+
+
+model MembershipTier {
+  id           String       @id @default(uuid())
+  name         String       @unique
+  price        Float
+  durationDays Int
+  description  String?
+  displayOrder Int          @default(0)
+  isActive     Boolean      @default(true)
+  isPopular    Boolean      @default(false)
+  members      Member[]
+  payments     Payment[]
+}
+
 
 model Document {
   id         String   @id @default(uuid())
@@ -83,5 +84,77 @@ model ActivityLog {
   id        String   @id @default(uuid())
   type      String   // "MEMBER_ADDED" | "MEMBER_DELETED" | "CERTIFICATE_ISSUED"
   message   String   // human-readable description shown in the notification bell
+  createdAt DateTime @default(now())
+}
+
+
+
+
+
+// Also add this line inside your existing Member model:
+//   payments  Payment[]
+// And this line inside your existing MembershipTier model:
+//   payments  Payment[]
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+}
+
+
+
+
+enum PaymentMethod {
+  ONLINE
+  CASH
+}
+
+
+model Payment {
+  id                String        @id @default(uuid())
+  memberId          String
+  member            Member        @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  tierId            String?
+  tier              MembershipTier? @relation(fields: [tierId], references: [id], onDelete: SetNull)
+  amount            Float
+  currency          String        @default("INR")
+  method            PaymentMethod @default(ONLINE)
+  periodStart       DateTime?     // <-- add: membership start date this payment covers
+  periodEnd         DateTime?     // <-- add: membership end date this payment covers
+  razorpayOrderId   String        @unique
+  razorpayPaymentId String?
+  status            PaymentStatus @default(PENDING)
+  createdAt         DateTime      @default(now())
+}
+
+
+
+
+enum AuthProvider {
+  PASSWORD
+  GOOGLE
+  OTP
+}
+
+model User {
+  id           String       @id @default(uuid())
+  email        String       @unique
+  password     String?      // nullable now — only ADMIN accounts (and existing legacy members) use this
+  googleId     String?      @unique
+  authProvider AuthProvider @default(PASSWORD)
+  role         Role         @default(MEMBER)
+  member       Member?
+  createdAt    DateTime     @default(now())
+}
+
+// Separate from PasswordResetOTP (which resets a password on an existing account)
+// - this one is for member sign-in/sign-up itself, no password involved at all.
+model LoginOTP {
+  id        String   @id @default(uuid())
+  email     String
+  otp       String
+  expiresAt DateTime
+  used      Boolean  @default(false)
   createdAt DateTime @default(now())
 }

@@ -6,9 +6,9 @@ import Reports from "./pages/Reports";
 import Settings from "./pages/Settings";
 import MemberProfile from "./pages/MemberProfile";
 import LoginPage from "./pages/LoginPage";
-import RegisterPage from "./pages/RegisterPage";
-import PortalSelect from "./pages/PortalSelect";
+import LandingPage from "./pages/LandingPage";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
+import VerifyCertificate from "./pages/VerifyCertificate";
 import { getUserFromToken } from "./utils/authUtils.js";
 
 export default function App() {
@@ -24,14 +24,25 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
+        {/* Public regardless of login state — this is what a certificate's
+            QR code links to, so it must work whether the visitor is
+            logged out, an admin, or a member. Placed before the auth-gated
+            blocks below so it matches before any of their "*" redirects. */}
+        <Route path="/verify" element={<VerifyCertificate />} />
+        <Route path="/verify/:certificateId" element={<VerifyCertificate />} />
+
         {!authUser && (
           <>
-            <Route path="/" element={<PortalSelect />} />
+            <Route path="/" element={<LandingPage />} />
             <Route
               path="/login/:portal"
               element={<LoginPage onLogin={handleLogin} />}
             />
-            <Route path="/register" element={<RegisterPage />} />
+            {/* /register removed — member sign-up now happens via
+                Google/OTP directly on the member login screen
+                (/login/member), which creates the account on first
+                successful sign-in. Admin accounts are never
+                self-registered. */}
             <Route path="/forgot-password" element={<ForgotPasswordPage />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </>
