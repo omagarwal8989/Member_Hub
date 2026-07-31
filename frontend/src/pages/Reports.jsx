@@ -293,6 +293,9 @@ import {
 import { Users, Award, Clock, TrendingUp, Loader2 } from "lucide-react";
 import Layout from "../components/Layout";
 
+import { API_BASE_URL } from "../config.js";
+
+
 const STATUS_COLORS = {
   ACTIVE: "#10b981",
   EXPIRING: "#f59e0b",
@@ -321,7 +324,7 @@ export default function Reports({ onLogout }) {
     const fetchStats = async () => {
       try {
         const res = await axios.get(
-          "http://localhost:5000/api/members/stats/overview",
+          `${API_BASE_URL}/api/members/stats/overview`,
           {
             headers: {
               Authorization: `Bearer ${localStorage.getItem("token")}`,

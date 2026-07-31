@@ -332,7 +332,8 @@ export default function Layout({
     setLoadingActivity(true);
     try {
       const res = await axios.get(
-        "http://localhost:5000/api/members/activity/recent",
+        // "http://localhost:5000/api/members/activity/recent",
+        "`${API_BASE_URL}/api/members/activity/recent",
         {
           headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
         },

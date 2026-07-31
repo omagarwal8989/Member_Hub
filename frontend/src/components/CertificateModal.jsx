@@ -195,7 +195,8 @@ export default function CertificateModal({ member, onClose }) {
 
     try {
       const res = await axios.get(
-        `http://localhost:5000/api/members/${member.id}/certificate`,
+        // `http://localhost:5000/api/members/${member.id}/certificate`,
+        `${API_BASE_URL}/api/members/${member.id}/certificate`,
         {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
