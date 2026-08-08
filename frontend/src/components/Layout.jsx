@@ -290,6 +290,9 @@ import {
 } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 
+import { API_BASE_URL } from "../config.js";
+
+
 const LAST_SEEN_KEY = "memberhub_activity_last_seen";
 
 export default function Layout({
@@ -328,23 +331,52 @@ export default function Layout({
   );
   const bellRef = useRef(null);
 
+
+
+
+  // const fetchActivity = async () => {
+  //   setLoadingActivity(true);
+  //   try {
+  //     const res = await axios.get(
+  //       // "http://localhost:5000/api/members/activity/recent",
+  //       "`${API_BASE_URL}/api/members/activity/recent",
+  //       {
+  //         headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+  //       },
+  //     );
+  //     setActivity(res.data);
+  //   } catch (error) {
+  //     // Fails silently
+  //   } finally {
+  //     setLoadingActivity(false);
+  //   }
+  // };
+
+
   const fetchActivity = async () => {
     setLoadingActivity(true);
     try {
       const res = await axios.get(
-        // "http://localhost:5000/api/members/activity/recent",
-        "`${API_BASE_URL}/api/members/activity/recent",
+        `${API_BASE_URL}/api/members/activity/recent`,
         {
           headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
         },
       );
-      setActivity(res.data);
+      // Defensive: only ever accept a real array. If the backend ever
+      // returns something else (an error object, HTML, etc.), silently
+      // fall back to empty rather than crashing the whole Layout.
+      setActivity(Array.isArray(res.data) ? res.data : []);
     } catch (error) {
-      // Fails silently
+      console.error("Failed to fetch activity:", error); // <-- was fully silent before, now visible for debugging
+      setActivity([]);
     } finally {
       setLoadingActivity(false);
     }
   };
+
+
+
+
 
   const hasUnread = activity.some(
     (entry) => !lastSeenAt || new Date(entry.createdAt) > new Date(lastSeenAt),

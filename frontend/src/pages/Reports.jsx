@@ -447,7 +447,7 @@ export default function Reports({ onLogout }) {
                 <CartesianGrid strokeDasharray="3 3" stroke="#262626" />
                 <XAxis
                   dataKey="name"
-                  tick={{ fontSize: 12, fill: "#a3a3a3" }}
+                  tick={{ fontSize: 10, fill: "#a3a3a3" }}
                 />
                 <YAxis
                   allowDecimals={false}
