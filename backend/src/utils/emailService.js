@@ -297,9 +297,48 @@ const sendWelcomeEmail = async (email, firstName, tierName) => {
   }
 };
 
+
+
+
+
+
+// Used when a member changes their contact email — proves they actually
+// own the NEW address before it's applied, so someone can't silently
+// redirect another person's membership to an email they don't control.
+const sendEmailChangeOtpEmail = async (email, otp) => {
+  try {
+    await sendViaBrevo({
+      to: email,
+      subject: "Confirm Your New MemberHub Email",
+      html: `
+        <h2>Confirm Email Change</h2>
+        <p>Use the code below to confirm this is your email address. This code expires in 10 minutes.</p>
+        <h1 style="letter-spacing: 6px; font-size: 36px;">${otp}</h1>
+        <p>If you didn't request this change, you can safely ignore this email — your account email won't change.</p>
+        <br/>
+        <p>Thank you,</p>
+        <p><strong>MemberHub Team</strong></p>
+      `,
+    });
+    console.log(`Email change OTP sent to ${email}`);
+  } catch (error) {
+    console.error(
+      `Failed to send email change OTP to ${email}:`,
+      error.response?.data || error.message,
+    );
+    throw error;
+  }
+};
+
+
+
+
+
+
 module.exports = {
   sendRenewalReminder,
   sendPasswordResetOtpEmail,
   sendLoginOtpEmail,
   sendWelcomeEmail,
+  sendEmailChangeOtpEmail,
 };

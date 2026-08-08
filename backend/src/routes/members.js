@@ -1,16 +1,17 @@
 const express = require("express");
 const { PrismaClient } = require("@prisma/client");
 const { subject } = require("@casl/ability");
-const { randomUUID } = require("crypto");
+// const { randomUUID } = require("crypto");
+const { randomUUID, randomInt } = require("crypto");
 const authenticate = require("../middleware/authMiddleware.js");
 const attachAbility = require("../middleware/attachAbility.js");
 const requireAbility = require("../middleware/requireAbility.js");
 const upload = require("../middleware/uploadMiddleware.js"); // Import the upload tool
 
-
 const { createMemberFromJoinPayment } = require("../utils/joinMembership.js");
 
-const { sendWelcomeEmail } = require("../utils/emailService.js");
+// const { sendWelcomeEmail } = require("../utils/emailService.js");
+const { sendWelcomeEmail, sendEmailChangeOtpEmail } = require("../utils/emailService.js");
 
 
 const router = express.Router();
@@ -32,30 +33,6 @@ const logActivity = (type, message) => {
     );
   }
 };
-
-
-
-
-// // 1. Get All Members (Admin only — members shouldn't see the whole directory)
-// router.get(
-//   "/",
-//   authenticate,
-//   attachAbility,
-//   requireAbility("manage", "all"),
-//   async (req, res) => {
-//     try {
-//       const members = await prisma.member.findMany({
-//         include: { tier: true },
-//       });
-//       res.status(200).json(members);
-//     } catch (error) {
-//       res
-//         .status(500)
-//         .json({ error: "Failed to fetch members", details: error.message });
-//     }
-//   },
-// );
-
 
 
 router.get(
@@ -84,90 +61,6 @@ router.get(
     }
   },
 );
-
-
-
-
-// // 2. Create a New Member with File Upload (Admin only)
-// // IMPORTANT: This route is only ever used for members who paid the owner
-// // directly — cash in hand, or a personal online transfer/UPI outside the
-// // website's checkout. Anyone who pays through the website registers
-// // themselves (see RegisterPage.jsx) and their membership is created via
-// // the Razorpay checkout + /renew flow instead, which sets status/endDate
-// // from a real payment. Because of that split, this route can safely:
-// //   - always set status to ACTIVE (the admin is vouching that payment
-// //     was received before adding the member)
-// //   - always compute endDate as "starts today" from the tier's
-// //     durationDays, instead of taking a date from the form
-// //   - always record a matching Payment row with method "CASH", so the
-// //     admin directory can show how each member's membership was funded
-// router.post(
-//   "/",
-//   authenticate,
-//   attachAbility,
-//   requireAbility("manage", "all"),
-//   upload.single("document"),
-//   async (req, res) => {
-//     try {
-//       const { firstName, lastName, tierId } = req.body;
-//       const email = req.body.email?.trim().toLowerCase();
-//       // req.file.path comes from Cloudinary after a successful upload
-//       const documentUrl = req.file ? req.file.path : null;
-
-//       const tier = await prisma.membershipTier.findUnique({
-//         where: { id: tierId },
-//       });
-//       if (!tier) {
-//         return res.status(400).json({ error: "Invalid membership tier." });
-//       }
-
-//       const endDate = new Date();
-//       endDate.setDate(endDate.getDate() + tier.durationDays);
-
-//       const newMember = await prisma.member.create({
-//         data: {
-//           firstName,
-//           lastName,
-//           email,
-//           tierId,
-//           endDate,
-//           status: "ACTIVE",
-//           documentUrl, // Make sure this field exists in your schema!
-//         },
-//       });
-
-//       // Record how this membership was funded. Uses a synthetic
-//       // razorpayOrderId (that column is required + unique) since there's
-//       // no real Razorpay order behind a cash/direct payment.
-//       await prisma.payment.create({
-//         data: {
-//           memberId: newMember.id,
-//           tierId,
-//           amount: tier.price,
-//           currency: "INR",
-//           method: "CASH",
-//           status: "PAID",
-//           razorpayOrderId: `cash_${randomUUID()}`,
-//         },
-//       });
-
-//       res
-//         .status(201)
-//         .json({ message: "Member registered successfully", newMember });
-
-//       logActivity(
-//         "MEMBER_ADDED",
-//         `New member added: ${newMember.firstName} ${newMember.lastName}`,
-//       );
-//     } catch (error) {
-//       res
-//         .status(500)
-//         .json({ error: "Failed to create member", details: error.message });
-//     }
-//   },
-// );
-
-
 
 
 router.post(
@@ -204,7 +97,6 @@ router.post(
         },
       });
 
-
       await prisma.payment.create({
         data: {
           memberId: newMember.id,
@@ -218,7 +110,6 @@ router.post(
           razorpayOrderId: `cash_${randomUUID()}`,
         },
       });
-
 
       res
         .status(201)
@@ -241,10 +132,6 @@ router.post(
     }
   },
 );
-
-
-
-
 
 // 3. Create a New Membership Tier (Admin only)
 router.post(
@@ -288,10 +175,6 @@ router.post(
     }
   },
 );
-
-
-
-
 
 // 4. Get All Tiers (Admin only — only used by admin create/edit forms)
 router.get(
@@ -394,9 +277,6 @@ router.put(
     }
   },
 );
-
-
-
 
 // 4.55. Set a Tier as "Most Popular" (Admin only) — unsets isPopular on
 // every other tier in the same transaction, guaranteeing exactly one
@@ -578,57 +458,6 @@ router.get(
 );
 
 
-
-
-// // 6. Get the logged-in MEMBER's own profile
-// // IMPORTANT: declared BEFORE "/:id" below, otherwise Express would treat
-// // "me" as an :id value.
-// router.get("/me", authenticate, async (req, res) => {
-//   try {
-//     let member = await prisma.member.findUnique({
-//       where: { userId: req.user.userId },
-//       include: { tier: true, documents: true },
-//     });
-
-//     // Fallback: this account may have registered before the matching
-//     // Member record existed, or the emails didn't match exactly at the
-//     // time. Retry the link here by matching on the User's current email,
-//     // instead of only ever trying once at registration time.
-//     if (!member) {
-//       const user = await prisma.user.findUnique({
-//         where: { id: req.user.userId },
-//       });
-//       if (user) {
-//         const candidate = await prisma.member.findUnique({
-//           where: { email: user.email },
-//         });
-//         if (candidate && !candidate.userId) {
-//           member = await prisma.member.update({
-//             where: { id: candidate.id },
-//             data: { userId: user.id },
-//             include: { tier: true, documents: true },
-//           });
-//         }
-//       }
-//     }
-
-//     if (!member) {
-//       return res
-//         .status(404)
-//         .json({ error: "No member profile is linked to this account." });
-//     }
-//     res.status(200).json(member);
-//   } catch (error) {
-//     res
-//       .status(500)
-//       .json({ error: "Failed to fetch profile", details: error.message });
-//   }
-// });
-
-
-
-
-
 router.get("/me", authenticate, async (req, res) => {
   try {
     let member = await prisma.member.findUnique({
@@ -675,11 +504,6 @@ router.get("/me", authenticate, async (req, res) => {
   }
 });
 
-
-
-
-
-
 // 6.5. Get the logged-in MEMBER's own payment/renewal history
 router.get("/me/payments", authenticate, async (req, res) => {
   try {
@@ -703,12 +527,12 @@ router.get("/me/payments", authenticate, async (req, res) => {
   } catch (error) {
     res
       .status(500)
-      .json({ error: "Failed to fetch payment history", details: error.message });
+      .json({
+        error: "Failed to fetch payment history",
+        details: error.message,
+      });
   }
 });
-
-
-
 
 // 7. Get a Single Member by ID (Admin, or the member viewing their own record)
 // IMPORTANT: this must be declared AFTER "/tiers", "/stats", and "/me" above,
@@ -733,9 +557,6 @@ router.get("/:id", authenticate, attachAbility, async (req, res) => {
   }
 });
 
-
-
-
 router.get("/:id", authenticate, attachAbility, async (req, res) => {
   try {
     const member = await prisma.member.findUnique({
@@ -759,95 +580,6 @@ router.get("/:id", authenticate, attachAbility, async (req, res) => {
       .json({ error: "Failed to fetch member", details: error.message });
   }
 });
-
-
-
-
-
-// // 8. Update a Member (Admin can edit name/email/tier; a member can only
-// // update their own email address)
-// // NOTE: endDate and status are intentionally NOT accepted here anymore.
-// // Both are fully system-controlled now — endDate only changes via a real
-// // payment (online checkout or admin "add member" cash flow), and status
-// // only changes via that same payment flow or the renewal cron job. This
-// // prevents an admin from accidentally mis-setting either field by hand.
-// router.put("/:id", authenticate, attachAbility, async (req, res) => {
-//   try {
-//     const existing = await prisma.member.findUnique({
-//       where: { id: req.params.id },
-//     });
-//     if (!existing) return res.status(404).json({ error: "Member not found" });
-
-//     const isAdmin = req.ability.can("manage", "all");
-//     const canUpdateOwnEmail = req.ability.can(
-//       "update",
-//       subject("Member", existing),
-//       "email",
-//     );
-
-//     if (!isAdmin && !canUpdateOwnEmail) {
-//       return res.status(403).json({ error: "Access denied." });
-//     }
-
-//     // const { firstName, lastName, tierId } = req.body;
-//     // const email = req.body.email?.trim().toLowerCase();
-
-//     // const data = isAdmin
-//     //   ? {
-//     //       ...(firstName !== undefined && { firstName }),
-//     //       ...(lastName !== undefined && { lastName }),
-//     //       ...(email !== undefined && { email }),
-//     //       ...(tierId !== undefined && { tierId }),
-//     //     }
-//     //   : { ...(email !== undefined && { email }) };
-
-
-//     const { firstName, lastName } = req.body; // tierId removed
-//     const email = req.body.email?.trim().toLowerCase();
-
-//     const data = isAdmin
-//       ? {
-//           ...(firstName !== undefined && { firstName }),
-//           ...(lastName !== undefined && { lastName }),
-//           ...(email !== undefined && { email }),
-//           // tierId intentionally removed — tier can now only change via a
-//           // renewal (online or direct), never as a standalone edit.
-//         }
-//       : { ...(email !== undefined && { email }) };
-
-
-
-//     const updatedMember = await prisma.member.update({
-//       where: { id: req.params.id },
-//       data,
-//       include: { tier: true },
-//     });
-
-//     // Keep login credentials in sync whenever the email actually changes
-//     // for a member who has a linked login — otherwise that account gets
-//     // silently locked out of its own login.
-//     if (email !== undefined && existing.userId) {
-//       await prisma.user.update({
-//         where: { id: existing.userId },
-//         data: { email },
-//       });
-//     }
-
-//     res
-//       .status(200)
-//       .json({ message: "Member updated successfully", updatedMember });
-//   } catch (error) {
-//     if (error.code === "P2025") {
-//       return res.status(404).json({ error: "Member not found" });
-//     }
-//     res
-//       .status(500)
-//       .json({ error: "Failed to update member", details: error.message });
-//   }
-// });
-
-
-
 
 
 // 8. Update a Member — MEMBER-SELF-SERVICE ONLY now.
@@ -902,6 +634,128 @@ router.put("/:id", authenticate, attachAbility, async (req, res) => {
       .json({ error: "Failed to update member", details: error.message });
   }
 });
+
+
+
+
+
+
+
+// 8.5. Request an OTP to change a member's email — Step 1.
+// Sends a code to the NEW address to prove ownership before anything
+// changes. Reuses the LoginOTP table (same shape: email/otp/expiresAt/used).
+router.post("/:id/email/request-otp", authenticate, attachAbility, async (req, res) => {
+  try {
+    const existing = await prisma.member.findUnique({
+      where: { id: req.params.id },
+    });
+    if (!existing) return res.status(404).json({ error: "Member not found" });
+
+    const canUpdateOwnEmail = req.ability.can(
+      "update",
+      subject("Member", existing),
+      "email",
+    );
+    if (!canUpdateOwnEmail) {
+      return res.status(403).json({ error: "Access denied." });
+    }
+
+    const newEmail = req.body.newEmail?.trim().toLowerCase();
+    if (!newEmail) {
+      return res.status(400).json({ error: "New email is required." });
+    }
+    if (newEmail === existing.email) {
+      return res
+        .status(400)
+        .json({ error: "That's already your current email." });
+    }
+
+    // Make sure no one else (member or user login) already owns this email.
+    const [memberClash, userClash] = await Promise.all([
+      prisma.member.findUnique({ where: { email: newEmail } }),
+      prisma.user.findUnique({ where: { email: newEmail } }),
+    ]);
+    if (memberClash || userClash) {
+      return res
+        .status(400)
+        .json({ error: "That email is already in use by another account." });
+    }
+
+    const otp = randomInt(100000, 999999).toString();
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+    await prisma.loginOTP.create({ data: { email: newEmail, otp, expiresAt } });
+    await sendEmailChangeOtpEmail(newEmail, otp);
+
+    res.status(200).json({ message: "Verification code sent to new email." });
+  } catch (error) {
+    res
+      .status(500)
+      .json({ error: "Failed to send verification code", details: error.message });
+  }
+});
+
+// 8.6. Verify the OTP and actually apply the email change — Step 2.
+router.post("/:id/email/verify-otp", authenticate, attachAbility, async (req, res) => {
+  try {
+    const existing = await prisma.member.findUnique({
+      where: { id: req.params.id },
+    });
+    if (!existing) return res.status(404).json({ error: "Member not found" });
+
+    const canUpdateOwnEmail = req.ability.can(
+      "update",
+      subject("Member", existing),
+      "email",
+    );
+    if (!canUpdateOwnEmail) {
+      return res.status(403).json({ error: "Access denied." });
+    }
+
+    const newEmail = req.body.newEmail?.trim().toLowerCase();
+    const { otp } = req.body;
+    if (!newEmail || !otp) {
+      return res.status(400).json({ error: "Email and code are required." });
+    }
+
+    const record = await prisma.loginOTP.findFirst({
+      where: { email: newEmail, otp, used: false },
+      orderBy: { createdAt: "desc" },
+    });
+    if (!record || record.expiresAt < new Date()) {
+      return res.status(400).json({ error: "Invalid or expired code." });
+    }
+
+    const updatedMember = await prisma.member.update({
+      where: { id: req.params.id },
+      data: { email: newEmail },
+      include: { tier: true },
+    });
+
+    if (existing.userId) {
+      await prisma.user.update({
+        where: { id: existing.userId },
+        data: { email: newEmail },
+      });
+    }
+
+    await prisma.loginOTP.update({
+      where: { id: record.id },
+      data: { used: true },
+    });
+
+    res
+      .status(200)
+      .json({ message: "Email updated successfully", updatedMember });
+  } catch (error) {
+    res
+      .status(500)
+      .json({ error: "Failed to verify code", details: error.message });
+  }
+});
+
+
+
 
 
 
@@ -1028,9 +882,6 @@ const {
   verifyPaymentSignature,
 } = require("../utils/razorpayClient.js");
 
-
-
-
 // 11.5. Get a Member's full payment/renewal history (Admin only)
 router.get(
   "/:id/payments",
@@ -1059,9 +910,6 @@ router.get(
     }
   },
 );
-
-
-
 
 // 10. Generate and Download Certificate (Admin, or the member downloading
 // their own certificate)
@@ -1165,79 +1013,6 @@ router.get(
 );
 
 
-
-
-
-// // 13. Create a Razorpay Order to renew a member's current tier
-// // (self, or admin on a member's behalf). This only creates the order and
-// // a PENDING Payment record — the actual renewal (extending endDate,
-// // resetting status to ACTIVE) does not happen until the payment is
-// // confirmed, either via the /verify endpoint below (client-side callback)
-// // or the webhook (server-to-server, see routes/payments.js). Both paths
-// // check the Payment's current status before applying the renewal, so
-// // whichever one runs first "wins" and the second is a safe no-op.
-// router.post(
-//   "/:id/renew/create-order",
-//   authenticate,
-//   attachAbility,
-//   async (req, res) => {
-//     try {
-//       const member = await prisma.member.findUnique({
-//         where: { id: req.params.id },
-//         include: { tier: true },
-//       });
-//       if (!member) return res.status(404).json({ error: "Member not found" });
-
-//       if (req.ability.cannot("read", subject("Member", member))) {
-//         return res.status(403).json({ error: "Access denied." });
-//       }
-
-//       const amountInPaise = Math.round(member.tier.price * 100);
-
-//       const order = await razorpay.orders.create({
-//         amount: amountInPaise,
-//         currency: "INR",
-//         // Razorpay caps "receipt" at 40 characters — a full UUID alone is
-//         // 36, so we use a short slice of the member ID instead of the
-//         // whole thing. This is just a reference string for reconciliation
-//         // on Razorpay's dashboard, not something the app reads back.
-//         receipt: `rcpt_${member.id.slice(0, 8)}_${Date.now()}`,
-//         notes: { memberId: member.id, tierId: member.tierId },
-//       });
-
-//       await prisma.payment.create({
-//         data: {
-//           memberId: member.id,
-//           tierId: member.tierId,
-//           amount: member.tier.price,
-//           currency: "INR",
-//           method: "ONLINE",
-//           razorpayOrderId: order.id,
-//           status: "PENDING",
-//         },
-//       });
-
-//       res.status(200).json({
-//         orderId: order.id,
-//         amount: order.amount,
-//         currency: order.currency,
-//         keyId: process.env.RAZORPAY_KEY_ID,
-//         memberName: `${member.firstName} ${member.lastName}`,
-//         tierName: member.tier.name,
-//       });
-//     } catch (error) {
-//       console.error("Failed to create Razorpay order:", error);
-//       res.status(500).json({
-//         error: "Failed to create payment order",
-//         details: error.message,
-//       });
-//     }
-//   },
-// );
-
-
-
-
 router.post(
   "/:id/renew/create-order",
   authenticate,
@@ -1254,8 +1029,6 @@ router.post(
         return res.status(403).json({ error: "Access denied." });
       }
 
-
-
       // Renewal is only allowed once the current plan is expiring or has
       // already lapsed — not while it's still comfortably active.
       if (member.status === "ACTIVE") {
@@ -1264,8 +1037,6 @@ router.post(
             "Your current membership is still active. You can renew once it starts expiring or after it ends.",
         });
       }
-
-
 
       // Let the member optionally switch tiers as part of renewal —
       // defaults to their current tier if not specified.
@@ -1320,87 +1091,6 @@ router.post(
 );
 
 
-
-
-
-// // 14. Verify a completed payment and apply the renewal
-// // (client-side confirmation path — see routes/payments.js for the webhook,
-// // which is the path that still works even if the browser closes right
-// // after payment succeeds, before this endpoint gets called.)
-// router.post(
-//   "/:id/renew/verify",
-//   authenticate,
-//   attachAbility,
-//   async (req, res) => {
-//     try {
-//       const { razorpay_order_id, razorpay_payment_id, razorpay_signature } =
-//         req.body;
-
-//       const member = await prisma.member.findUnique({
-//         where: { id: req.params.id },
-//         include: { tier: true },
-//       });
-//       if (!member) return res.status(404).json({ error: "Member not found" });
-
-//       if (req.ability.cannot("read", subject("Member", member))) {
-//         return res.status(403).json({ error: "Access denied." });
-//       }
-
-//       const isValid = verifyPaymentSignature({
-//         orderId: razorpay_order_id,
-//         paymentId: razorpay_payment_id,
-//         signature: razorpay_signature,
-//       });
-
-//       if (!isValid) {
-//         return res.status(400).json({ error: "Payment verification failed." });
-//       }
-
-//       const payment = await prisma.payment.findUnique({
-//         where: { razorpayOrderId: razorpay_order_id },
-//       });
-//       if (!payment) {
-//         return res.status(404).json({ error: "Payment record not found." });
-//       }
-
-//       // Idempotency guard: if the webhook already applied this renewal,
-//       // don't extend the membership a second time.
-//       if (payment.status !== "PAID") {
-//         const now = new Date();
-//         const baseDate = member.endDate > now ? member.endDate : now;
-//         const newEndDate = new Date(baseDate);
-//         newEndDate.setDate(newEndDate.getDate() + member.tier.durationDays);
-
-//         await prisma.$transaction([
-//           prisma.payment.update({
-//             where: { id: payment.id },
-//             data: { status: "PAID", razorpayPaymentId: razorpay_payment_id },
-//           }),
-//           prisma.member.update({
-//             where: { id: member.id },
-//             data: { endDate: newEndDate, status: "ACTIVE" },
-//           }),
-//         ]);
-
-//         logActivity(
-//           "MEMBER_RENEWED",
-//           `${member.firstName} ${member.lastName} renewed their ${member.tier.name} membership`,
-//         );
-//       }
-
-//       res.status(200).json({ message: "Membership renewed successfully." });
-//     } catch (error) {
-//       res
-//         .status(500)
-//         .json({ error: "Failed to verify payment", details: error.message });
-//     }
-//   },
-// );
-
-
-
-
-
 router.post(
   "/:id/renew/verify",
   authenticate,
@@ -1437,47 +1127,6 @@ router.post(
       }
 
 
-      
-
-      // if (payment.status !== "PAID") {
-      //   // Use the tier that was actually paid for (payment.tierId), not
-      //   // the member's current tier — they may have just switched plans.
-      //   const paidTier = await prisma.membershipTier.findUnique({
-      //     where: { id: payment.tierId },
-      //   });
-      //   if (!paidTier) {
-      //     return res.status(400).json({ error: "Paid tier no longer exists." });
-      //   }
-
-      //   const now = new Date();
-      //   const baseDate = member.endDate > now ? member.endDate : now;
-      //   const newEndDate = new Date(baseDate);
-      //   newEndDate.setDate(newEndDate.getDate() + paidTier.durationDays);
-
-      //   await prisma.$transaction([
-      //     prisma.payment.update({
-      //       where: { id: payment.id },
-      //       data: { status: "PAID", razorpayPaymentId: razorpay_payment_id },
-      //     }),
-      //     prisma.member.update({
-      //       where: { id: member.id },
-      //       data: {
-      //         endDate: newEndDate,
-      //         status: "ACTIVE",
-      //         tierId: paidTier.id,
-      //       },
-      //     }),
-      //   ]);
-
-      //   logActivity(
-      //     "MEMBER_RENEWED",
-      //     `${member.firstName} ${member.lastName} renewed their ${paidTier.name} membership`,
-      //   );
-      // }
-
-
-
-
       if (payment.status !== "PAID") {
         const paidTier = await prisma.membershipTier.findUnique({
           where: { id: payment.tierId },
@@ -1497,8 +1146,8 @@ router.post(
             data: {
               status: "PAID",
               razorpayPaymentId: razorpay_payment_id,
-              periodStart: baseDate,      // <-- add
-              periodEnd: newEndDate,      // <-- add
+              periodStart: baseDate, // <-- add
+              periodEnd: newEndDate, // <-- add
             },
           }),
           prisma.member.update({
@@ -1517,10 +1166,6 @@ router.post(
         );
       }
 
-
-
-
-
       res.status(200).json({ message: "Membership renewed successfully." });
     } catch (error) {
       res
@@ -1529,12 +1174,6 @@ router.post(
     }
   },
 );
-
-
-
-
-
-
 
 // 15. Join as a New Member — Create Order
 // For a logged-in MEMBER-role user (signed up via Google or email OTP)
@@ -1659,11 +1298,6 @@ router.post("/join/verify", authenticate, async (req, res) => {
   }
 });
 
-
-
-
-
-
 // 14.5. Admin Direct Renewal (member paid the admin in cash, or a direct
 // online transfer outside the website checkout). Skips Razorpay entirely.
 // Optionally switches the member to a different tier as part of the
@@ -1683,17 +1317,12 @@ router.put(
       });
       if (!member) return res.status(404).json({ error: "Member not found" });
 
-
-
-
       if (member.status === "ACTIVE") {
         return res.status(400).json({
           error:
             "This member's plan is still active. Renewal is only available once it starts expiring or after it ends.",
         });
       }
-
-      
 
       const { tierId } = req.body;
       const targetTier = tierId
@@ -1712,33 +1341,6 @@ router.put(
       const baseDate = member.endDate > now ? member.endDate : now;
       const newEndDate = new Date(baseDate);
       newEndDate.setDate(newEndDate.getDate() + targetTier.durationDays);
-
-
-
-      // const [updatedMember] = await prisma.$transaction([
-      //   prisma.member.update({
-      //     where: { id: member.id },
-      //     data: {
-      //       endDate: newEndDate,
-      //       status: "ACTIVE",
-      //       ...(tierId && { tierId }),
-      //     },
-      //     include: { tier: true },
-      //   }),
-      //   prisma.payment.create({
-      //     data: {
-      //       memberId: member.id,
-      //       tierId: targetTier.id,
-      //       amount: targetTier.price,
-      //       currency: "INR",
-      //       method: "CASH",
-      //       status: "PAID",
-      //       razorpayOrderId: `cash_${randomUUID()}`,
-      //     },
-      //   }),
-      // ]);
-
-
 
 
       const [updatedMember] = await prisma.$transaction([
@@ -1766,9 +1368,6 @@ router.put(
         }),
       ]);
 
-
-
-
       res.status(200).json({
         message: "Membership renewed successfully.",
         member: updatedMember,
@@ -1786,8 +1385,5 @@ router.put(
     }
   },
 );
-
-
-
 
 module.exports = router;
