@@ -159,7 +159,8 @@
 
 
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+// import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
 import { ArrowLeft, Dumbbell } from "lucide-react";
 
@@ -168,6 +169,9 @@ import { API_BASE_URL } from "../config.js";
 
 export default function ForgotPasswordPage() {
   const navigate = useNavigate();
+
+  const { portal } = useParams();
+
   const [step, setStep] = useState(1);
   const [email, setEmail] = useState("");
   const [otp, setOtp] = useState("");
@@ -226,12 +230,28 @@ export default function ForgotPasswordPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-surface px-4">
       <div className="bg-surface-alt border border-border p-8 rounded-2xl shadow-2xl shadow-black/50 w-96">
-        <Link
+
+
+
+
+        {/* <Link
           to="/"
           className="flex items-center gap-1 text-sm text-neutral-500 hover:text-neutral-300 mb-4"
         >
           <ArrowLeft size={14} /> Back to login
+        </Link> */}
+
+
+
+        <Link
+          to={`/login/${portal}`}
+          className="flex items-center gap-1 text-sm text-neutral-500 hover:text-neutral-300 mb-4"
+        >
+          <ArrowLeft size={14} /> Back to login
         </Link>
+
+
+
 
         <div className="flex items-center gap-2.5 mb-4">
           <div className="w-9 h-9 bg-brand-600 rounded-lg flex items-center justify-center shrink-0">

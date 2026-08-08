@@ -38,12 +38,25 @@ export default function App() {
               path="/login/:portal"
               element={<LoginPage onLogin={handleLogin} />}
             />
-            {/* /register removed — member sign-up now happens via
-                Google/OTP directly on the member login screen
-                (/login/member), which creates the account on first
-                successful sign-in. Admin accounts are never
-                self-registered. */}
-            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+
+
+            <Route
+              path="/login/:portal/verify-email"
+              element={<LoginPage onLogin={handleLogin} />}
+            />
+            <Route
+              path="/login/:portal/verify-email/confirm"
+              element={<LoginPage onLogin={handleLogin} />}
+            />
+
+
+            {/* <Route path="/forgot-password" element={<ForgotPasswordPage />} /> */}
+
+
+            <Route
+              path="/forgot-password/:portal"
+              element={<ForgotPasswordPage />}
+            />
             <Route path="*" element={<Navigate to="/" replace />} />
           </>
         )}
