@@ -662,7 +662,8 @@ export default function LoginPage({ onLogin }) {
             <button
               type="submit"
               disabled={sendingOtp}
-              className="w-full bg-neutral-700 text-white p-2.5 rounded-lg font-medium hover:bg-neutral-600 disabled:opacity-50 transition-colors"
+              // className="w-full bg-neutral-700 text-white p-2.5 rounded-lg font-medium hover:bg-neutral-600 disabled:opacity-50 transition-colors"
+              className="w-full bg-brand-600 text-white p-2.5 rounded-lg font-medium hover:bg-brand-700 disabled:opacity-50 transition-colors"
             >
               {sendingOtp ? "Sending code..." : "Send Verification Code"}
             </button>
