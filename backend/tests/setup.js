@@ -1,6 +1,9 @@
-// A fixed, test-only secret so authMiddleware.js can verify tokens we sign
-// in tests. This never touches your real .env JWT_SECRET.
+// A fixed, test-only secret so authMiddleware.js can verify tokens we sign in tests. This never touches your real .env JWT_SECRET.
+
+process.env.NODE_ENV = "test";
 process.env.JWT_SECRET = "test-secret-do-not-use-in-production";
+
+
 
 // The Razorpay SDK validates its config at construction time and throws
 // immediately if key_id is missing — these fake values just let the module

@@ -14,8 +14,30 @@ const { createMemberFromJoinPayment } = require("../utils/joinMembership.js");
 const { sendWelcomeEmail, sendEmailChangeOtpEmail } = require("../utils/emailService.js");
 
 
+const rateLimit = require("express-rate-limit");
+
+
 const router = express.Router();
 const prisma = new PrismaClient();
+
+
+
+
+
+
+const emailOtpLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 8,
+  skip: () => process.env.NODE_ENV === "test",
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Too many attempts. Please try again in a few minutes." },
+});
+
+
+
+
+
 
 // Helper: fire-and-forget activity log entry, powers the notification bell.
 // Wrapped so it can NEVER throw into the caller — if the ActivityLog table
@@ -644,7 +666,7 @@ router.put("/:id", authenticate, attachAbility, async (req, res) => {
 // 8.5. Request an OTP to change a member's email — Step 1.
 // Sends a code to the NEW address to prove ownership before anything
 // changes. Reuses the LoginOTP table (same shape: email/otp/expiresAt/used).
-router.post("/:id/email/request-otp", authenticate, attachAbility, async (req, res) => {
+router.post("/:id/email/request-otp", emailOtpLimiter, authenticate, attachAbility, async (req, res) => {
   try {
     const existing = await prisma.member.findUnique({
       where: { id: req.params.id },
@@ -696,7 +718,7 @@ router.post("/:id/email/request-otp", authenticate, attachAbility, async (req, r
 });
 
 // 8.6. Verify the OTP and actually apply the email change — Step 2.
-router.post("/:id/email/verify-otp", authenticate, attachAbility, async (req, res) => {
+router.post("/:id/email/verify-otp", emailOtpLimiter, authenticate, attachAbility, async (req, res) => {
   try {
     const existing = await prisma.member.findUnique({
       where: { id: req.params.id },

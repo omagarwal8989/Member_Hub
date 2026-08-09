@@ -9,10 +9,47 @@ const {
   sendPasswordResetOtpEmail,
 } = require("../utils/emailService.js");
 const authenticate = require("../middleware/authMiddleware.js");
+
+
+const rateLimit = require("express-rate-limit");
+
+
 const prisma = new PrismaClient();
 const router = express.Router();
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+
+
+
+
+
+// Applies to login, forgot-password, and OTP request — the endpoints most
+// worth protecting from brute-force guessing or spam. Keyed by IP.
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10, // 10 attempts per IP per window
+  skip: () => process.env.NODE_ENV === "test",
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Too many attempts. Please try again in a few minutes." },
+});
+
+
+// Stricter limit specifically for OTP verification — a 6-digit code has
+// only 1,000,000 combinations, so this needs to be tight enough to make
+// brute-forcing impractical.
+const otpVerifyLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 8,
+  skip: () => process.env.NODE_ENV === "test",
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Too many attempts. Please try again in a few minutes." },
+});
+
+
+
+
 
 // Shared helper: link a freshly created member User to an existing
 // admin-created (or cash-signup) Member record with the same email, if
@@ -54,7 +91,7 @@ function issueToken(user) {
 
 
 
-router.post("/login", async (req, res) => {
+router.post("/login", authLimiter, async (req, res) => {
   try {
     const email = req.body.email?.trim().toLowerCase();
     const { password } = req.body;
@@ -125,7 +162,7 @@ router.post("/google", async (req, res) => {
 // Used only the FIRST time a member sets up their account. Once they have
 // a password, they log in via POST /login like anyone else, and this step
 // is never needed again for them.
-router.post("/otp/request", async (req, res) => {
+router.post("/otp/request", authLimiter, async (req, res) => {
   const email = req.body.email?.trim().toLowerCase();
   if (!email) return res.status(400).json({ error: "Email is required." });
 
@@ -155,7 +192,7 @@ router.post("/otp/request", async (req, res) => {
 // --- Member sign-up: Step 2 — verify the OTP and set a password ---
 // Creates the User (or, if they already exist via Google with no
 // password yet, adds a password onto that same account) and logs them in.
-router.post("/otp/verify-signup", async (req, res) => {
+router.post("/otp/verify-signup", otpVerifyLimiter, async (req, res) => {
   const email = req.body.email?.trim().toLowerCase();
   const { otp, password } = req.body;
 
@@ -223,7 +260,7 @@ router.post("/otp/verify-signup", async (req, res) => {
 
 // --- Forgot Password (OTP-based) — works for ANY account with a password:
 // admins, and now members too, once they've completed sign-up above. ---
-router.post("/forgot-password", async (req, res) => {
+router.post("/forgot-password", authLimiter, async (req, res) => {
   const email = req.body.email?.trim().toLowerCase();
 
   try {
@@ -250,7 +287,7 @@ router.post("/forgot-password", async (req, res) => {
   }
 });
 
-router.post("/reset-password", async (req, res) => {
+router.post("/reset-password", otpVerifyLimiter, async (req, res) => {
   const email = req.body.email?.trim().toLowerCase();
   const { otp, newPassword } = req.body;
 

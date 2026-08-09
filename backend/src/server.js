@@ -15,6 +15,7 @@ dotenv.config();
 const app = express();
 
 
+app.set("trust proxy", 1);
 
 
 // app.use(cors()); // ← move it up here, before everything else
