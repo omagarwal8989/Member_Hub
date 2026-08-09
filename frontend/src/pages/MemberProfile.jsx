@@ -482,7 +482,7 @@ export default function MemberProfile({ onLogout }) {
                 My Documents
               </h2>
 
-              {member.documents?.length > 0 ? (
+              {/* {member.documents?.length > 0 ? (
                 <ul className="divide-y divide-border mb-4">
                   {member.documents.map((doc) => (
                     <li
@@ -502,7 +502,34 @@ export default function MemberProfile({ onLogout }) {
                       </span>
                     </li>
                   ))}
+                </ul> */}
+
+
+              {member.documents?.length > 0 ? (
+                <ul className="divide-y divide-border mb-4">
+                  {member.documents.map((doc) => (
+                    <li
+                      key={doc.id}
+                      className="flex items-center justify-between gap-3 py-2.5"
+                    >
+                      <a
+                        href={doc.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-sm font-medium text-brand-500 hover:text-brand-400 truncate min-w-0"
+                      >
+                        {doc.name}
+                      </a>
+                      <span className="text-xs text-neutral-500 mt-0.5 shrink-0">
+                        {new Date(doc.uploadedAt).toLocaleDateString()}
+                      </span>
+                    </li>
+                  ))}
                 </ul>
+
+
+
+
               ) : (
                 <p className="text-sm text-neutral-500 mb-4">
                   No documents uploaded yet.
