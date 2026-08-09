@@ -158,7 +158,7 @@
 
 
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 // import { Link, useNavigate } from "react-router-dom";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
@@ -181,6 +181,20 @@ export default function ForgotPasswordPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
+
+  const [resendCooldown, setResendCooldown] = useState(0);
+
+
+
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const timer = setInterval(() => {
+      setResendCooldown((prev) => (prev <= 1 ? 0 : prev - 1));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [resendCooldown]);
+
+
   const handleRequestOtp = async (e) => {
     e.preventDefault();
     setError("");
@@ -193,12 +207,36 @@ export default function ForgotPasswordPage() {
       );
       setMessage(res.data.message);
       setStep(2);
+      setResendCooldown(30);
     } catch (err) {
       setError("Something went wrong. Please try again.");
     } finally {
       setLoading(false);
     }
   };
+
+
+
+
+  const handleResendOtp = async () => {
+    setError("");
+    setLoading(true);
+    try {
+      const res = await axios.post(
+        `${API_BASE_URL}/api/auth/forgot-password`,
+        { email },
+      );
+      setMessage(res.data.message);
+      setResendCooldown(30);
+    } catch (err) {
+      setError("Something went wrong. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+
+
 
   const handleResetPassword = async (e) => {
     e.preventDefault();
@@ -333,6 +371,23 @@ export default function ForgotPasswordPage() {
             >
               {loading ? "Resetting..." : "Reset Password"}
             </button>
+
+
+
+
+            <button
+              type="button"
+              onClick={handleResendOtp}
+              disabled={resendCooldown > 0 || loading}
+              className="w-full text-sm text-neutral-500 hover:text-neutral-300 disabled:opacity-50 disabled:hover:text-neutral-500 mt-3"
+            >
+              {resendCooldown > 0 ? `Resend code in ${resendCooldown}s` : "Resend code"}
+            </button>
+
+
+
+
+
             <button
               type="button"
               onClick={() => setStep(1)}

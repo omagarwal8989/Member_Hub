@@ -441,12 +441,21 @@ export default function Reports({ onLogout }) {
         {/* Tier breakdown */}
         <div className="bg-surface-alt p-6 rounded-xl border border-border">
           <h2 className="text-lg font-bold text-white mb-4">Members by Tier</h2>
-          <div className="h-64">
+          {/* <div className="h-64"> */}
+          <div className="h-72">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={stats.tierBreakdown}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#262626" />
+                {/* <XAxis
+                  dataKey="name"
+                  tick={{ fontSize: 10, fill: "#a3a3a3" }}
+                /> */}
                 <XAxis
                   dataKey="name"
+                  interval={0}
+                  angle={-30}
+                  textAnchor="end"
+                  height={70}
                   tick={{ fontSize: 10, fill: "#a3a3a3" }}
                 />
                 <YAxis

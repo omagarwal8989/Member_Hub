@@ -41,6 +41,10 @@ export default function MemberProfile({ onLogout }) {
   const [payments, setPayments] = useState([]);
   const [loadingPayments, setLoadingPayments] = useState(false);
 
+
+  const [resendCooldown, setResendCooldown] = useState(0);
+
+
   const fetchPayments = async () => {
     setLoadingPayments(true);
     try {
@@ -87,6 +91,19 @@ export default function MemberProfile({ onLogout }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+
+
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const timer = setInterval(() => {
+      setResendCooldown((prev) => (prev <= 1 ? 0 : prev - 1));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [resendCooldown]);
+
+
+
+
   // const handleSaveEmail = async (e) => {
   //   e.preventDefault();
   //   setSaving(true);
@@ -121,6 +138,7 @@ export default function MemberProfile({ onLogout }) {
         getAuthHeader(),
       );
       setEmailStep("otp-sent");
+      setResendCooldown(30);
       toast.success("Verification code sent to your new email.");
     } catch (error) {
       toast.error(error.response?.data?.error || "Failed to send code.");
@@ -148,6 +166,32 @@ export default function MemberProfile({ onLogout }) {
       setVerifyingEmailOtp(false);
     }
   };
+
+
+
+
+
+  const handleResendEmailOtp = async () => {
+    setSendingEmailOtp(true);
+    try {
+      await axios.post(
+        `${API_BASE_URL}/api/members/${member.id}/email/request-otp`,
+        { newEmail: email },
+        getAuthHeader(),
+      );
+      setResendCooldown(30);
+      toast.success("Code resent.");
+    } catch (error) {
+      toast.error(error.response?.data?.error || "Failed to resend code.");
+    } finally {
+      setSendingEmailOtp(false);
+    }
+  };
+
+
+
+
+
 
   const cancelEmailChange = () => {
     setEmailStep("idle");
@@ -325,8 +369,6 @@ export default function MemberProfile({ onLogout }) {
               </button>
             </div>
 
-
-
             {/* Update email */}
             {/* <div className="bg-surface-alt rounded-xl border border-border p-6 mb-6">
               <h2 className="text-sm font-bold text-white mb-3 flex items-center gap-2">
@@ -350,10 +392,6 @@ export default function MemberProfile({ onLogout }) {
                 </button>
               </form>
             </div> */}
-
-
-
-
 
             {/* Update email */}
             <div className="bg-surface-alt rounded-xl border border-border p-6 mb-6">
@@ -419,14 +457,24 @@ export default function MemberProfile({ onLogout }) {
                       Cancel
                     </button>
                   </div>
+
+                  <button
+                    type="button"
+                    onClick={handleResendEmailOtp}
+                    disabled={resendCooldown > 0 || sendingEmailOtp}
+                    className="w-full text-xs text-neutral-500 hover:text-neutral-300 disabled:opacity-50 disabled:hover:text-neutral-500"
+                  >
+                    {resendCooldown > 0
+                      ? `Resend code in ${resendCooldown}s`
+                      : "Resend code"}
+                  </button>
+
+
+
+                  
                 </form>
               )}
             </div>
-
-
-
-
-
 
             {/* Documents */}
             <div className="bg-surface-alt rounded-xl border border-border p-6 mb-6">

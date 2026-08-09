@@ -422,6 +422,10 @@ export default function LoginPage({ onLogin }) {
 
   const [error, setError] = useState("");
 
+
+  const [resendCooldown, setResendCooldown] = useState(0);
+
+
   // If the confirm step is reached via a fresh page load (reload, or a
   // shared/bookmarked link), recover the email from the URL query param.
   useEffect(() => {
@@ -429,6 +433,25 @@ export default function LoginPage({ onLogin }) {
     if (emailFromQuery && !signupEmail) setSignupEmail(emailFromQuery);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+
+
+  // Start (or restart) the 30s cooldown whenever the confirm-code step loads
+  useEffect(() => {
+    if (mode === "signup-otp") setResendCooldown(30);
+  }, [mode]);
+
+  // Tick the cooldown down once per second
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const timer = setInterval(() => {
+      setResendCooldown((prev) => (prev <= 1 ? 0 : prev - 1));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [resendCooldown]);
+
+
+
 
   const decodeRole = (token) => {
     try {
@@ -508,6 +531,29 @@ export default function LoginPage({ onLogin }) {
     }
   };
 
+
+
+
+
+  const handleResendOtp = async () => {
+    setError("");
+    setSendingOtp(true);
+    try {
+      await axios.post(`${API_BASE_URL}/api/auth/otp/request`, {
+        email: signupEmail,
+      });
+      setResendCooldown(30);
+    } catch (err) {
+      setError(err.response?.data?.error || "Failed to resend code.");
+    } finally {
+      setSendingOtp(false);
+    }
+  };
+
+
+
+
+
   const handleVerifyAndCreatePassword = async (e) => {
     e.preventDefault();
     setError("");
@@ -531,10 +577,10 @@ export default function LoginPage({ onLogin }) {
     }
   };
 
-  const goToLogin = () => {
-    setError("");
-    navigate(`/login/${portal}`);
-  };
+  // const goToLogin = () => {
+  //   setError("");
+  //   navigate(`/login/${portal}`);
+  // };
 
   const goToVerifyEmail = () => {
     setError("");
@@ -553,13 +599,39 @@ export default function LoginPage({ onLogin }) {
   return (
     <div className="min-h-screen flex items-center justify-center bg-surface px-4">
       <div className="bg-surface-alt border border-border p-8 rounded-2xl shadow-2xl shadow-black/50 w-96">
-        <button
+        
+        
+        
+        
+        {/* <button
           type="button"
           onClick={() => navigate("/")}
           className="flex items-center gap-1 text-sm text-neutral-500 hover:text-neutral-300 mb-4"
         >
           <ArrowLeft size={14} /> Back
+        </button> */}
+
+
+
+
+        <button
+          type="button"
+          onClick={() => {
+            setError("");
+            if (mode === "login") {
+              navigate("/");
+            } else {
+              navigate(`/login/${portal}`);
+            }
+          }}
+          className="flex items-center gap-1 text-sm text-neutral-500 hover:text-neutral-300 mb-4"
+        >
+          <ArrowLeft size={14} /> Back
         </button>
+
+
+
+
 
         <div className="flex items-center gap-2.5 mb-6">
           <div className="w-9 h-9 bg-brand-600 rounded-lg flex items-center justify-center shrink-0">
@@ -715,13 +787,13 @@ export default function LoginPage({ onLogin }) {
             >
               {sendingOtp ? "Sending code..." : "Send Verification Code"}
             </button>
-            <button
+            {/* <button
               type="button"
               onClick={goToLogin}
               className="w-full text-xs text-neutral-500 hover:text-neutral-300"
             >
               Back to login
-            </button>
+            </button> */}
           </form>
         ) : (
           <form onSubmit={handleVerifyAndCreatePassword} className="space-y-3">
@@ -767,6 +839,24 @@ export default function LoginPage({ onLogin }) {
             >
               {verifying ? "Verifying..." : "Verify & Create Account"}
             </button>
+
+
+
+
+
+
+            <button
+              type="button"
+              onClick={handleResendOtp}
+              disabled={resendCooldown > 0 || sendingOtp}
+              className="w-full text-xs text-neutral-500 hover:text-neutral-300 disabled:opacity-50 disabled:hover:text-neutral-500"
+            >
+              {resendCooldown > 0 ? `Resend code in ${resendCooldown}s` : "Resend code"}
+            </button>
+
+
+
+
             <button
               type="button"
               onClick={useADifferentEmail}
