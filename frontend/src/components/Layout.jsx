@@ -287,6 +287,8 @@ import {
   UserMinus,
   Award,
   Dumbbell,
+  Menu,
+  X,
 } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 
@@ -329,6 +331,11 @@ export default function Layout({
   const [lastSeenAt, setLastSeenAt] = useState(
     () => localStorage.getItem(LAST_SEEN_KEY) || null,
   );
+
+
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  
   const bellRef = useRef(null);
 
 
@@ -436,9 +443,9 @@ export default function Layout({
   return (
     <div className="flex h-screen bg-surface font-sans">
       {/* Sidebar */}
-      <aside className="w-64 bg-surface-alt border-r border-border flex flex-col">
-        {/* Logo Area */}
-        <div className="h-16 flex items-center px-6 border-b border-border">
+      {/* <aside className="w-64 bg-surface-alt border-r border-border flex flex-col"> */}
+      {/* Logo Area */}
+      {/* <div className="h-16 flex items-center px-6 border-b border-border">
           <div className="w-8 h-8 bg-brand-600 rounded-lg flex items-center justify-center mr-3">
             <Dumbbell className="text-white" size={18} />
           </div>
@@ -448,10 +455,10 @@ export default function Layout({
           >
             MEMBERHUB
           </span>
-        </div>
+        </div> */}
 
-        {/* Navigation Links */}
-        <nav className="flex-1 px-4 py-6 space-y-1">
+      {/* Navigation Links */}
+      {/* <nav className="flex-1 px-4 py-6 space-y-1">
           <Link to="/" className={navLinkClass("/")}>
             <LayoutDashboard className={navIconClass("/")} />
             Dashboard
@@ -461,6 +468,81 @@ export default function Layout({
             Reports
           </Link>
           <Link to="/settings" className={navLinkClass("/settings")}>
+            <SettingsIcon className={navIconClass("/settings")} />
+            Settings
+          </Link>
+        </nav> */}
+
+      {/* Sidebar Footer (Logout) */}
+      {/* <div className="p-4 border-t border-border">
+          <button
+            onClick={onLogout}
+            className="flex items-center w-full px-3 py-2.5 text-red-400 hover:bg-red-500/10 rounded-lg font-medium transition-colors"
+          >
+            <LogOut className="mr-3 w-5 h-5" />
+            Log Out
+          </button>
+        </div>
+      </aside> */}
+
+      {/* Mobile overlay — click to close sidebar */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/60 z-40 lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
+      {/* Sidebar */}
+      <aside
+        className={`fixed lg:static inset-y-0 left-0 z-50 w-64 bg-surface-alt border-r border-border flex flex-col transform transition-transform duration-200 ${
+          sidebarOpen ? "translate-x-0" : "-translate-x-full"
+        } lg:translate-x-0`}
+      >
+        {/* Logo Area */}
+        <div className="h-16 flex items-center justify-between px-6 border-b border-border">
+          <div className="flex items-center">
+            <div className="w-8 h-8 bg-brand-600 rounded-lg flex items-center justify-center mr-3">
+              <Dumbbell className="text-white" size={18} />
+            </div>
+            <span
+              className="text-lg text-white tracking-wide"
+              style={{ fontFamily: "var(--font-display)" }}
+            >
+              MEMBERHUB
+            </span>
+          </div>
+          <button
+            onClick={() => setSidebarOpen(false)}
+            className="lg:hidden text-neutral-400 hover:text-white"
+          >
+            <X size={20} />
+          </button>
+        </div>
+
+        {/* Navigation Links */}
+        <nav className="flex-1 px-4 py-6 space-y-1">
+          <Link
+            to="/"
+            className={navLinkClass("/")}
+            onClick={() => setSidebarOpen(false)}
+          >
+            <LayoutDashboard className={navIconClass("/")} />
+            Dashboard
+          </Link>
+          <Link
+            to="/reports"
+            className={navLinkClass("/reports")}
+            onClick={() => setSidebarOpen(false)}
+          >
+            <BarChart3 className={navIconClass("/reports")} />
+            Reports
+          </Link>
+          <Link
+            to="/settings"
+            className={navLinkClass("/settings")}
+            onClick={() => setSidebarOpen(false)}
+          >
             <SettingsIcon className={navIconClass("/settings")} />
             Settings
           </Link>
@@ -481,9 +563,21 @@ export default function Layout({
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Top Header */}
-        <header className="h-16 bg-surface-alt border-b border-border flex items-center justify-between px-8">
+        {/* <header className="h-16 bg-surface-alt border-b border-border flex items-center justify-between px-8"> */}
+        {/* Search Bar */}
+        {/* <div className="flex items-center text-neutral-500 bg-surface-hover px-3 py-2 rounded-lg w-64 focus-within:ring-2 focus-within:ring-brand-600 transition-all"> */}
+
+        <header className="h-16 bg-surface-alt border-b border-border flex items-center justify-between px-4 sm:px-8 gap-3">
+          {/* Hamburger (mobile only) */}
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className="lg:hidden text-neutral-400 hover:text-white shrink-0"
+          >
+            <Menu size={22} />
+          </button>
+
           {/* Search Bar */}
-          <div className="flex items-center text-neutral-500 bg-surface-hover px-3 py-2 rounded-lg w-64 focus-within:ring-2 focus-within:ring-brand-600 transition-all">
+          <div className="flex items-center text-neutral-500 bg-surface-hover px-3 py-2 rounded-lg flex-1 max-w-64 focus-within:ring-2 focus-within:ring-brand-600 transition-all">
             <Search className="w-4 h-4 mr-2 shrink-0" />
             <input
               type="text"
@@ -495,7 +589,10 @@ export default function Layout({
           </div>
 
           {/* User Profile Area */}
-          <div className="flex items-center gap-6">
+
+          {/* <div className="flex items-center gap-6"> */}
+
+          <div className="flex items-center gap-3 sm:gap-6">
             <div className="relative" ref={bellRef}>
               <button
                 onClick={toggleNotifications}
@@ -550,19 +647,28 @@ export default function Layout({
                 </div>
               )}
             </div>
-            <div className="flex items-center gap-3 border-l border-border pl-6">
+
+            {/* <div className="flex items-center gap-3 border-l border-border pl-6"> */}
+            <div className="flex items-center gap-3 border-l border-border pl-3 sm:pl-6">
               <div className="w-8 h-8 rounded-full bg-brand-600 flex items-center justify-center text-white font-bold text-sm">
                 {userEmail.charAt(0).toUpperCase()}
               </div>
-              <span className="text-sm font-medium text-neutral-300">
+
+              {/* <span className="text-sm font-medium text-neutral-300"> */}
+              <span className="hidden sm:inline text-sm font-medium text-neutral-300">
                 {userEmail}
               </span>
             </div>
           </div>
         </header>
 
+
+
         {/* Page Content */}
-        <main className="flex-1 overflow-auto p-8">{children}</main>
+        {/* <main className="flex-1 overflow-auto p-8">{children}</main> */}
+        <main className="flex-1 overflow-auto p-4 sm:p-8">{children}</main>
+
+
       </div>
     </div>
   );

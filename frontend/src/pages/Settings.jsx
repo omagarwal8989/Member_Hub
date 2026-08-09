@@ -825,7 +825,11 @@ export default function Settings({ onLogout }) {
             {tiers.map((tier, index) =>
               editingTierId === tier.id ? (
                 <li key={tier.id} className="py-3 space-y-2">
-                  <div className="flex items-center gap-2">
+
+                
+
+
+                  {/* <div className="flex items-center gap-2">
                     <input
                       className={`p-2 text-sm flex-1 min-w-0 ${inputClass}`}
                       placeholder="Plan name"
@@ -856,7 +860,47 @@ export default function Settings({ onLogout }) {
                         })
                       }
                     />
+                  </div> */}
+
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <input
+                      className={`p-2 text-sm flex-1 min-w-0 ${inputClass}`}
+                      placeholder="Plan name"
+                      value={editForm.name}
+                      onChange={(e) =>
+                        setEditForm({ ...editForm, name: e.target.value })
+                      }
+                    />
+                    <div className="flex gap-2">
+                      <input
+                        className={`p-2 text-sm w-full sm:w-24 ${inputClass}`}
+                        type="number"
+                        step="0.01"
+                        placeholder="Price"
+                        value={editForm.price}
+                        onChange={(e) =>
+                          setEditForm({ ...editForm, price: e.target.value })
+                        }
+                      />
+                      <input
+                        className={`p-2 text-sm w-full sm:w-24 ${inputClass}`}
+                        type="number"
+                        placeholder="Days"
+                        value={editForm.durationDays}
+                        onChange={(e) =>
+                          setEditForm({
+                            ...editForm,
+                            durationDays: e.target.value,
+                          })
+                        }
+                      />
+                    </div>
                   </div>
+
+
+
+
+
                   <textarea
                     className={`w-full p-2 text-sm resize-none ${inputClass}`}
                     rows={2}
@@ -883,10 +927,10 @@ export default function Settings({ onLogout }) {
                   </div>
                 </li>
               ) : (
-                <li
-                  key={tier.id}
-                  className="py-3 flex items-start justify-between gap-4"
-                >
+
+
+                <li key={tier.id} className="py-3 flex flex-col gap-3">
+                  <div className="flex items-start gap-4">
                   <div className="flex flex-col shrink-0 -my-1">
                     <button
                       onClick={() => moveTier(index, -1)}
@@ -928,7 +972,8 @@ export default function Settings({ onLogout }) {
                       </p>
                     )}
                   </div>
-                  <div className="flex items-center gap-3 shrink-0">
+                  </div>
+                  <div className="flex flex-wrap items-center gap-3 pl-8">
                     <button
                       onClick={() => handleSetPopular(tier)}
                       disabled={tier.isPopular}

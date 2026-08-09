@@ -586,14 +586,20 @@ export default function MemberDetail({ onLogout }) {
               <h2 className="text-xl font-bold text-white">
                 {member.firstName} {member.lastName}
               </h2>
-              <p className="text-sm text-neutral-400 flex items-center gap-1.5 mt-0.5">
+
+              {/* <p className="text-sm text-neutral-400 flex items-center gap-1.5 mt-0.5">
                 <Mail size={13} className="text-neutral-500" />
                 {member.email}
+              </p> */}
+              <p className="text-sm text-neutral-400 flex items-center gap-1.5 mt-0.5 min-w-0">
+                <Mail size={13} className="text-neutral-500 shrink-0" />
+                <span className="break-all">{member.email}</span>
               </p>
             </div>
           </div>
 
-          <dl className="grid grid-cols-2 gap-5 border-t border-border pt-5">
+          {/* <dl className="grid grid-cols-2 gap-5 border-t border-border pt-5"> */}
+          <dl className="grid grid-cols-1 sm:grid-cols-2 gap-5 border-t border-border pt-5">
             <div className="flex items-start gap-2.5">
               <Tag size={16} className="text-neutral-500 mt-0.5" />
               <div>
@@ -763,7 +769,10 @@ export default function MemberDetail({ onLogout }) {
         ) : (
           <ul className="divide-y divide-border">
             {payments.map((p) => (
-              <li key={p.id} className="flex items-center justify-between py-3">
+              <li
+                key={p.id}
+                className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 py-3"
+              >
                 <div>
                   <p className="text-sm font-medium text-neutral-200">
                     {p.tier?.name || "Membership"}
@@ -777,11 +786,23 @@ export default function MemberDetail({ onLogout }) {
                       : "Dates not recorded"}
                   </p>
                 </div>
-                <div className="text-right">
+
+
+
+                {/* <div className="text-right">
                   <p className="text-sm font-medium text-neutral-200">
                     ₹{p.amount}
                   </p>
-                  <div className="flex items-center gap-1.5 justify-end mt-0.5">
+                  <div className="flex items-center gap-1.5 justify-end mt-0.5"> */}
+                
+                <div className="sm:text-right">
+                  <p className="text-sm font-medium text-neutral-200">
+                    ₹{p.amount}
+                  </p>
+                  <div className="flex items-center gap-1.5 sm:justify-end mt-0.5">
+                
+                
+                
                     <span
                       className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${
                         p.method === "ONLINE"

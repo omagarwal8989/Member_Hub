@@ -676,12 +676,19 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen bg-black text-white">
       {/* Utility bar */}
-      <div className="bg-neutral-950 border-b border-neutral-800">
+      {/* <div className="bg-neutral-950 border-b border-neutral-800">
         <div className="max-w-6xl mx-auto px-6 h-10 flex items-center justify-between text-xs text-neutral-400">
           <span className="flex items-center gap-2">
             <Clock size={13} /> Open Mon–Sat, 6:00 AM – 10:00 PM
           </span>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4"> */}
+
+      <div className="bg-neutral-950 border-b border-neutral-800">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 h-auto sm:h-10 py-2 sm:py-0 flex flex-col sm:flex-row items-center justify-center sm:justify-between gap-1.5 sm:gap-0 text-xs text-neutral-400">
+          <span className="hidden sm:flex items-center gap-2">
+            <Clock size={13} /> Open Mon–Sat, 6:00 AM – 10:00 PM
+          </span>
+          <div className="flex items-center gap-3 sm:gap-4">
             <Link
               to="/login/member"
               className="hover:text-white transition-colors"
@@ -704,7 +711,7 @@ export default function LandingPage() {
       </div>
 
       {/* Main nav */}
-      <header className="sticky top-0 z-30 bg-black/95 backdrop-blur-sm border-b border-neutral-800">
+      {/* <header className="sticky top-0 z-30 bg-black/95 backdrop-blur-sm border-b border-neutral-800">
         <div className="max-w-6xl mx-auto px-6 h-20 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-red-600 rounded flex items-center justify-center">
@@ -712,6 +719,20 @@ export default function LandingPage() {
             </div>
             <span
               className="text-2xl tracking-wide"
+              style={{ fontFamily: "'Anton', sans-serif" }}
+            >
+              MEMBERHUB FITNESS
+            </span>
+          </div> */}
+
+      <header className="sticky top-0 z-30 bg-black/95 backdrop-blur-sm border-b border-neutral-800">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 sm:h-20 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-red-600 rounded flex items-center justify-center shrink-0">
+              <Dumbbell className="text-white" size={18} />
+            </div>
+            <span
+              className="text-base sm:text-2xl tracking-wide truncate"
               style={{ fontFamily: "'Anton', sans-serif" }}
             >
               MEMBERHUB FITNESS
@@ -739,9 +760,16 @@ export default function LandingPage() {
             </a>
           </nav>
 
-          <Link
+          {/* <Link
             to="/login/member"
             className="bg-red-600 hover:bg-red-700 text-white font-semibold text-sm px-6 py-3 rounded transition-colors tracking-wide"
+          >
+            JOIN NOW
+          </Link> */}
+
+          <Link
+            to="/login/member"
+            className="bg-red-600 hover:bg-red-700 text-white font-semibold text-xs sm:text-sm px-3 sm:px-6 py-2 sm:py-3 rounded transition-colors tracking-wide whitespace-nowrap shrink-0"
           >
             JOIN NOW
           </Link>
@@ -773,14 +801,27 @@ export default function LandingPage() {
           <div className="absolute inset-0 bg-gradient-to-r from-black/20 via-transparent to-black/20" />
         </div>
 
-        <div className="relative max-w-6xl mx-auto px-6 py-28 md:py-36 text-center">
+
+
+        {/* <div className="relative max-w-6xl mx-auto px-6 py-28 md:py-36 text-center">
           <p className="text-red-500 font-semibold tracking-[0.3em] text-sm mb-4">
             GYM · YOGA · PERSONAL TRAINING
           </p>
           <h1
             className="text-5xl md:text-7xl leading-[1.02] tracking-wide max-w-4xl mx-auto"
             style={{ fontFamily: "'Anton', sans-serif" }}
+          > */}
+
+        <div className="relative max-w-6xl mx-auto px-4 sm:px-6 py-16 sm:py-28 md:py-36 text-center">
+          <p className="text-red-500 font-semibold tracking-[0.2em] sm:tracking-[0.3em] text-xs sm:text-sm mb-4">
+            GYM · YOGA · PERSONAL TRAINING
+          </p>
+          <h1
+            className="text-3xl sm:text-5xl md:text-7xl leading-[1.05] sm:leading-[1.02] tracking-wide max-w-4xl mx-auto"
+            style={{ fontFamily: "'Anton', sans-serif" }}
           >
+
+
             TRANSFORM YOUR BODY.
             <br />
             <span className="text-red-500">TRANSFORM YOUR LIFE.</span>
@@ -789,7 +830,10 @@ export default function LandingPage() {
             Real coaching, real accountability, and a membership system that
             never lets a renewal slip through the cracks.
           </p>
-          <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
+
+
+
+          {/* <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
             <Link
               to="/login/member"
               className="inline-flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-8 py-4 rounded font-semibold tracking-wide transition-colors"
@@ -802,7 +846,28 @@ export default function LandingPage() {
             >
               VIEW MEMBERSHIP PLANS
             </a>
+          </div> */}
+
+
+
+          <div className="mt-8 sm:mt-10 flex flex-col sm:flex-row flex-wrap items-center justify-center gap-3 sm:gap-4">
+            <Link
+              to="/login/member"
+              className="w-full sm:w-auto justify-center inline-flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-6 sm:px-8 py-3.5 sm:py-4 rounded font-semibold text-sm sm:text-base tracking-wide transition-colors"
+            >
+              START YOUR MEMBERSHIP <ArrowRight size={18} />
+            </Link>
+            
+            <a
+              href="#plans"
+              className="w-full sm:w-auto justify-center inline-flex items-center gap-2 border border-neutral-700 hover:border-white text-white px-6 sm:px-8 py-3.5 sm:py-4 rounded font-semibold text-sm sm:text-base tracking-wide transition-colors"
+            >
+              VIEW MEMBERSHIP PLANS
+            </a>
           </div>
+
+
+
         </div>
       </section>
 

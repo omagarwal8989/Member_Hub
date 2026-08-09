@@ -551,6 +551,7 @@ export default function Reports({ onLogout }) {
             No renewals due in the next 30 days.
           </div>
         ) : (
+          <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-border">
             <thead className="bg-surface-hover">
               <tr>
@@ -575,6 +576,7 @@ export default function Reports({ onLogout }) {
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </div>
     </Layout>
