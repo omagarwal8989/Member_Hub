@@ -480,7 +480,7 @@
 
 const request = require("supertest");
 const { prismaMock } = require("./prismaMock");
-const { makeToken } = require("./testHelpers");
+const { makeToken } = require("./testhelpers");
 
 // Certificate generation now uses Puppeteer (a real headless Chromium
 // instance) — that's appropriate for production, not for a fast, offline

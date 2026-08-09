@@ -231,7 +231,7 @@
 const request = require("supertest");
 const bcrypt = require("bcryptjs");
 const { prismaMock } = require("./prismaMock");
-const { makeToken } = require("./testHelpers");
+const { makeToken } = require("./testhelpers");
 
 // Mock the actual functions auth.js imports — these must match
 // emailService.js's real exports exactly, or a stale mock will silently
