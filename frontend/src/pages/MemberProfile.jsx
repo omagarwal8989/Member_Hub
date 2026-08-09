@@ -401,23 +401,22 @@ export default function MemberProfile({ onLogout }) {
               </h2>
 
               {emailStep === "idle" ? (
-                <form onSubmit={handleRequestEmailOtp} className="flex gap-3">
-                  <input
-                    className="flex-1 p-3 border border-border bg-surface-hover text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                  />
-                  <button
-                    type="submit"
-                    disabled={sendingEmailOtp || email === member.email}
-                    className="bg-brand-600 text-white font-medium px-4 rounded-lg hover:bg-brand-700 disabled:opacity-50 flex items-center gap-2 transition-colors"
-                  >
-                    <Save size={16} />{" "}
-                    {sendingEmailOtp ? "Sending code..." : "Save"}
-                  </button>
-                </form>
+              <form onSubmit={handleRequestEmailOtp} className="flex flex-col sm:flex-row gap-3">
+                <input
+                  className="flex-1 min-w-0 p-3 border border-border bg-surface-hover text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
+                <button
+                  type="submit"
+                  disabled={sendingEmailOtp || email === member.email}
+                  className="w-full sm:w-auto justify-center bg-brand-600 text-white font-medium px-4 py-3 sm:py-0 rounded-lg hover:bg-brand-700 disabled:opacity-50 flex items-center gap-2 transition-colors"
+                >
+                  <Save size={16} /> {sendingEmailOtp ? "Sending code..." : "Save"}
+                </button>
+              </form>
               ) : (
                 <form onSubmit={handleVerifyEmailOtp} className="space-y-3">
                   <p className="text-sm text-neutral-400">
@@ -471,7 +470,7 @@ export default function MemberProfile({ onLogout }) {
 
 
 
-                  
+
                 </form>
               )}
             </div>
